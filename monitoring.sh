@@ -13,22 +13,22 @@ vcpu=$(grep "^processor" /proc/cpuinfo | wc -l)
 
 #Memoria RAM disponible y su porcentaje de uso
 #free enseña la memoria --> /proc/meminfo
-fram=$(free -m | awk 'NR == 1{print $2}')
-uram=$(free -m | awk 'NR == "Mem:" {print $3}')
+fram=$(free -m | awk 'NR == 2{print $4"Mb"}')
+uram=$(free -m | awk 'NR == 2{print $3}')
 #porcentaje actual del uso de tus núcleos o ram
-pram=$(free -m |awk '/Mem/ {printf("%.3f"), $3/$2*100}')
+pram=$(free -m | awk 'NR == 2{printf("%.2f"), $3/$4*100}')
 
 #Memoria DISCO y su porcentaje de uso
 #df --> report file system disk space usage
 fdisk=$(df -Bg | awk '/^\/dev/{fd+=$4}END{print fd"G"}')
-udisK=$(df -Bg | awk '/^\/dev{ud+=$2}END{print ud"G"}')
-pdisk=$(df -Bg | awk '/^\/dev{fd+=$4}{ud+=$3}END{printf("%dG"), ud/fd*100}')
+udisk=$(df -Bg | awk '/^\/dev/{ud+=$3}END{print ud"G"}')
+pdisk=$(df -Bg | awk '/^\/dev/{fd+=$4}{ud+=$3}END{printf("%dG"), ud/fd*100}')
 
 #Porcentaje actual del uso de mis núcleos
 cpul=$(top -bn1 | grep '^%Cpu' | cut -d: -f2 | xargs | awk '{printf("%.1f%%"), $1 + $3}')
 
 #FECHA Y HORA DEL ULTIMO REINICIO
-ureinicio=$(who -b | awk '/system/{print $3" "$4}')
+ureinicio=$(who -b | awk '{print $4 " " $5}')
 
 #LVM (logical volume manager), admin de discos para el kernel
 # 1) buscar si está en uso
@@ -38,7 +38,7 @@ lvme=$(if [ "$lvms" = 0 ]; then echo YES; else echo NO; fi)
 
 #Número de conexiones activas --> TCP
 #file --> /proc/net/sockstat ... coger las conexiones TCP
-ctcp=$(cat /proc/net/sockstat | awk '/TCP:{print $3}')
+ctcp=$(cat /proc/net/sockstat | awk '/TCP:/{print $3}')
 
 #NUMERO DE USUARIOS CONECTADOS EN EL SERVER
 ulogged=$(users | wc -c)
@@ -50,7 +50,7 @@ MAC=$(ip link show | awk '/link\/ether/{print $2}')
 #NUMERO DE COMANDOS SUDO EJECUTADOS
 sudocmd=$(journalctl _COMM=sudo | grep COMMAND | wc -l)
 
-wall "	#Arquitectura: $arc
+wall "	#Arquitectura: $arq
 	#Nucleos físicos CPU: $ncpu
 	#Nucleos lógicos CPU: $vcpu
 	#RAM: $uram/$fram  ($pram%)
