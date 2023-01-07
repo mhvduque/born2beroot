@@ -13,53 +13,48 @@ vcpu=$(grep "^processor" /proc/cpuinfo | wc -l)
 
 #Memoria RAM disponible y su porcentaje de uso
 #free enseña la memoria --> /proc/meminfo
-fram=$(free -m | grep Mem: | awk '{print $2}')
-uram=$(free -m | grep Mem: | awk '{print $3}')
+fram=$(free -m | awk 'NR == 2{print $4"Mb"}')
+uram=$(free -m | awk 'NR == 2{print $3}')
 #porcentaje actual del uso de tus núcleos o ram
-pram=$(free    | grep Mem: | awk '{printf("%.2f"), $3/$2*100}')
+pram=$(free -m | awk 'NR == 2{printf("%.2f"), $3/$4*100}')
 
 #Memoria DISCO y su porcentaje de uso
 #df --> report file system disk space usage
-fdisk=$(df -Bg | grep '^/dev/' | grep -v '/boot$' | awk '{ft += $2} END {print ft}')
-udisk=$(df -Bm | grep '^/dev/' | grep -v '/boot$' | awk '{ut += $3} END {print ut}')
-pdisk=$(df -Bm | grep '^/dev/' | grep -v '/boot$' | awk '{ut += $3} {ft+= $2} END {printf("%d"), ut/ft*100}')
+fdisk=$(df -Bg | awk '/^\/dev/{fd+=$4}END{print fd"G"}')
+udisk=$(df -Bg | awk '/^\/dev/{ud+=$3}END{print ud"G"}')
+pdisk=$(df -Bg | awk '/^\/dev/{fd+=$4}{ud+=$3}END{printf("%dG"), ud/fd*100}')
 
 #Porcentaje actual del uso de mis núcleos
-cpul=$(top -bn1 | grep '^%Cpu' | cut -c 9- | xargs | awk '{printf("%.1f%%"), $1 + $3}')
+cpul=$(top -bn1 | grep '^%Cpu' | cut -d: -f2 | xargs | awk '{printf("%.1f%%"), $1 + $3}')
 
 #FECHA Y HORA DEL ULTIMO REINICIO
-ureinicio=$(who -b | awk '$1 == "system" {print $3 " " $4}')
+ureinicio=$(who -b | awk '{print $4 " " $5}')
 
 #LVM (logical volume manager), admin de discos para el kernel
 # 1) buscar si está en uso
-lvms=$(lsblk -o TYPE | grep "lvm" | wc -l)
-# 2) Expresar si está o no en uso
-lvme=$(if [ $lvms -eq 0 ]; then echo no; else echo yes; fi)
+lvme=$(if [ "$lvms" = 0 ]; then echo YES; else echo NO; fi)
 
 #Número de conexiones activas --> TCP
 #file --> /proc/net/sockstat ... coger las conexiones TCP
-ctcp=$(cat /proc/net/tcp | wc -l | awk '{print $1-1}' | tr '' ' ')
+ctcp=$(cat /proc/net/sockstat | awk '/TCP:/{print $3}')
 
-#NUMERO DE USUARIOS CONECTADOS EN EL SERVER
-ulogged=$(users | wc -w)
+#numero de usuarios conectados
+ulogged=$(users | wc -c)
+MAC=$(ip link show | awk '/link\/ether/{print $2}')
 
-#IP y MACS
-dip=$(hostname -I)
-MAC=$(ip link show | awk '$1 == "link/ether" {print $2}')
-
-#NUMERO DE COMANDOS SUDO EJECUTADOS
+#numero de cmd sudo ejecutados
 sudocmd=$(journalctl _COMM=sudo | grep COMMAND | wc -l)
 
 wall "	#Architecture: $arq
 	#CPU physical: $ncpu
 	#vCPU: $vcpu
-	#Memory Usage: $uram/${fram}MB  ($pram%)
-	#Disk Usage: $udisk/${fdisk}Gb ($pdisk%)
+	#Memory Usage: $uram/$fram  ($pram%)
+	#Disk Usage: $udisk/$fdisk ($pdisk%)
 	#CPU load: $cpul
-	#Last reboot: $ureinicio
+	#Last boot: $ureinicio
 	#LVM use: $lvme
-	#Connexions TCP: $ctcp ESTABLISHED
+	#Connexions TCP: $ctcp
 	#User log: $ulogged
 	#Network: IP $dip ($MAC)
-	#sudo: $sudocmd cmd"
-#WaLl es lo que hace broadcast al resto de ususarios conectados
+	#sudo cmd: $sudocmd"
+#wall es lo que hace broadcast al resto de ususarios conectados
