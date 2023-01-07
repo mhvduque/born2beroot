@@ -6,7 +6,7 @@ arq=$(uname -a)
 
 #Número de núcleos físicos
 #/proc/cpuinfo
-pcpu=$(grep "physical id" /proc/cpuinfo | sort | uniq | wc -l)
+pcpu=$(grep physical /proc/cpuinfo | sort | uniq | wc -l)
 #Número de núcleos virtuales
 #/proc/cpuinfo
 vcpu=$(grep "^processor" /proc/cpuinfo | wc -l)
@@ -45,7 +45,7 @@ MAC=$(ip link show | awk '/link\/ether/{print $2}')
 #numero de cmd sudo ejecutados
 sudocmd=$(journalctl _COMM=sudo | grep COMMAND | wc -l)
 
-wall "	#Architecture: $arq
+echo "	#Architecture: $arq
 	#CPU physical: $ncpu
 	#vCPU: $vcpu
 	#Memory Usage: $uram/$fram  ($pram%)
